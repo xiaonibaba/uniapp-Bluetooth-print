@@ -30,15 +30,15 @@
 				</view>
 			</radio-group>
 		</scroll-view>
+		<canvas canvas-id="shareCanvas" style="width: 240px; height: 240px;"></canvas>
 
-		<view class="devices_summary">Log：</view>
+		<view class="devices_summary" v-if="false">Log：</view>
 		<scroll-view class="device_list" scroll-y="true" show-scrollbar="true">
 			<view v-for="(item,index) in BleMessge" :key="index" style="font-size: 20rpx" class="device_item">
 				{{item.message}}
 			</view>
 		</scroll-view>
 
-		<canvas style="width: 160px; height: 160px;" canvas-id="shareCanvas"></canvas>
 
 	</view>
 </template>
@@ -62,6 +62,9 @@
 				devicesList: [], //设备列表
 				serviceList: [], //服务列表
 				deviceId: "", //选中的deviceId
+				canvas_width: 240,
+				canvas_height: 240,
+
 			}
 		},
 		//页面卸载是关闭蓝牙链接
@@ -234,22 +237,25 @@
 			print_Qrcode() {
 				let self = this;
 				const ctx = uni.createCanvasContext('shareCanvas');
-				ctx.clearRect(0, 0, 160, 160);
+
+				console.log(self.canvas_width);
+				ctx.clearRect(0, 0, self.canvas_width, self.canvas_height);
 
 				drawQrcode({
 					canvasId: 'shareCanvas',
-					text: String('xiaonibaba.com,我来了'),
-					width: 160,
-					height: 160,
+					text: String('xiaonibaba.com'),
+					width: self.canvas_width,
+					height: self.canvas_height,
 					callback(e) {
 						setTimeout(() => {
+							console.log(self.canvas_width);
 							// 获取图片数据
 							uni.canvasGetImageData({
 								canvasId: 'shareCanvas',
 								x: 0,
 								y: 0,
-								width: 160,
-								height: 160,
+								width: self.canvas_width,
+								height: self.canvas_height,
 								success(res) {
 									let buffer = util.toArrayBuffer(res);
 									self.printbuffs(buffer);

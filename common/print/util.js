@@ -49,7 +49,7 @@ function convert8to1(arr) {
 function toArrayBuffer(res) {
 	let arr = convert4to1(res.data);
 	let data = convert8to1(arr);
-	let cmds = [].concat([27, 97, 1], [29, 118, 48, 0, 20, 0, 160, 0], data, [27, 74, 3], [27, 64]);
+	let cmds = [].concat([27, 97, 1], [29, 118, 48, 0, 30, 0, 240, 0], data, [27, 74, 3], [27, 64]);
 	return new Uint8Array(cmds).buffer;
 }
 

@@ -232,7 +232,6 @@ class Bluetooth {
 		});
 	}
 
-
 	//若APP在之前已有搜索过某个蓝牙设备，并成功建立连接，可直接传入之前搜索获取的 deviceId 直接尝试连接该设备，无需进行搜索操作。
 	reconnect() {
 		(async () => {
