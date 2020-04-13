@@ -210,17 +210,21 @@ class Bluetooth {
 
 		console.log("this: " + JSON.stringify(this));
 
-		uni.writeBLECharacteristicValue({
-			deviceId,
-			serviceId,
-			characteristicId,
-			value: buffer,
-			success(res) {
-				console.log('message发送成功', JSON.stringify(res));
-			},
-			fail(err) {
-				console.log('message发送失败', JSON.stringify(err));
-			}
+		return new Promise((resolve, reject) => {
+			uni.writeBLECharacteristicValue({
+				deviceId,
+				serviceId,
+				characteristicId,
+				value: buffer,
+				success(res) {
+					console.log('message发送成功', JSON.stringify(res));
+					resolve(res);
+				},
+				fail(err) {
+					console.log('message发送失败', JSON.stringify(err));
+					reject(err);
+				}
+			});
 		});
 	}
 
@@ -248,8 +252,8 @@ class Bluetooth {
 				let result3 = await this.getBLEDeviceCharacteristics();
 				console.log("getBLEDeviceCharacteristics: " + JSON.stringify(result3));
 
-				this.writeId = uni.getStorageSync("writeId");
-				this.notifyId = uni.getStorageSync("notifyId");
+				// this.writeId = uni.getStorageSync("writeId");
+				// this.notifyId = uni.getStorageSync("notifyId");
 			} catch (err) {
 				console.log("err: " + JSON.stringify(err));
 			}

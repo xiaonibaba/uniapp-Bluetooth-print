@@ -7,7 +7,7 @@
 	-->
 	<view class="content">
 
-		<button size="mini" type="primary" @tap="startBluetoothDeviceDiscovery" :loading="loading_1" :disabled="loading_1">搜索周边设备</button>
+		<button size="mini" type="primary" @tap="startBluetoothDeviceDiscovery">搜索周边设备</button>
 		<button size="mini" type="warn" @tap="stopBluetoothDevicesDiscovery">停止搜索</button>
 		<button type="primary" @tap="pickUpOnce">测试打印</button>
 		<button type="primary" @tap="print_Qrcode">二维码</button>
@@ -31,15 +31,6 @@
 			</radio-group>
 		</scroll-view>
 		<canvas canvas-id="shareCanvas" style="width: 240px; height: 240px;"></canvas>
-
-		<view class="devices_summary" v-if="false">Log：</view>
-		<scroll-view class="device_list" scroll-y="true" show-scrollbar="true">
-			<view v-for="(item,index) in BleMessge" :key="index" style="font-size: 20rpx" class="device_item">
-				{{item.message}}
-			</view>
-		</scroll-view>
-
-
 	</view>
 </template>
 
@@ -56,15 +47,12 @@
 		components: {},
 		data() {
 			return {
-				loading_1: false,
-				BleMessge: [],
 				isOpenBle: false, //是否已经打开蓝牙，默认为false
 				devicesList: [], //设备列表
 				serviceList: [], //服务列表
 				deviceId: "", //选中的deviceId
 				canvas_width: 240,
 				canvas_height: 240,
-
 			}
 		},
 		//页面卸载是关闭蓝牙链接
@@ -74,7 +62,6 @@
 		},
 		//页面打开,获取位置,打开蓝牙链接
 		onLoad() {
-
 			uni.getLocation({
 				type: 'wgs84',
 				success: function(res) {
@@ -95,11 +82,11 @@
 				})
 
 				let self = this;
+				self.devicesList = [];
 
 				setTimeout(() => {
 					uni.startBluetoothDevicesDiscovery({
 						success: res => {
-
 							uni.onBluetoothDeviceFound(devices => {
 								console.log("发现设备: " + JSON.stringify(devices));
 								//不重复,就添加到devicesList中,
@@ -163,12 +150,7 @@
 
 			},
 
-			log(message) {
-				console.log(message);
-				this.BleMessge.unshift({
-					message: message
-				});
-			},
+
 
 			//打印一次
 			pickUpOnce() {
@@ -213,7 +195,7 @@
 					.println();
 
 				let buffer = printerJobs.buffer();
-				//this.log('ArrayBuffer', 'length: ' + buffer.byteLength, ' hex: ' + printerUtil.ab2hex(buffer));
+
 				this.printbuffs(buffer);
 			},
 
@@ -228,7 +210,7 @@
 				const maxChunk = 20;
 				const delay = 20;
 				for (let i = 0, j = 0, length = buffer.byteLength; i < length; i += maxChunk, j++) {
-					let subPackage = buffer.slice(i, i + maxChunk <= length ? (i + maxChunk) : length);
+					let subPackage = buffer.slice(i, i + maxChunk <= length ? (i + maxChunk) : length);	
 					setTimeout(this.printbuff, j * delay, subPackage);
 				}
 			},
@@ -236,38 +218,38 @@
 
 			print_Qrcode() {
 				let self = this;
-				const ctx = uni.createCanvasContext('shareCanvas');
 
-				console.log(self.canvas_width);
-				ctx.clearRect(0, 0, self.canvas_width, self.canvas_height);
+				return new Promise((resolve, reject) => {
 
-				drawQrcode({
-					canvasId: 'shareCanvas',
-					text: String('xiaonibaba.com'),
-					width: self.canvas_width,
-					height: self.canvas_height,
-					callback(e) {
-						setTimeout(() => {
-							console.log(self.canvas_width);
-							// 获取图片数据
-							uni.canvasGetImageData({
-								canvasId: 'shareCanvas',
-								x: 0,
-								y: 0,
-								width: self.canvas_width,
-								height: self.canvas_height,
-								success(res) {
-									let buffer = util.toArrayBuffer(res);
-									self.printbuffs(buffer);
-								}
-							})
-						}, 3000);
-					}
+					const ctx = uni.createCanvasContext('shareCanvas');
+					console.log(self.canvas_width);
+					ctx.clearRect(0, 0, self.canvas_width, self.canvas_height);
+
+					drawQrcode({
+						canvasId: 'shareCanvas',
+						text: String('xiaonibaba.com'),
+						width: self.canvas_width,
+						height: self.canvas_height,
+						callback(e) {
+							setTimeout(() => {
+								console.log(self.canvas_width);
+								// 获取图片数据
+								uni.canvasGetImageData({
+									canvasId: 'shareCanvas',
+									x: 0,
+									y: 0,
+									width: self.canvas_width,
+									height: self.canvas_height,
+									success(res) {
+										let buffer = util.toArrayBuffer(res);
+										self.printbuffs(buffer);
+									}
+								})
+							}, 3000);
+						}
+					});
 				});
 			},
-
-
-
 		}
 	}
 </script>
