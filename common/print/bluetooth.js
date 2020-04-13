@@ -13,7 +13,7 @@ class Bluetooth {
 		uni.showToast({
 			title: title,
 			icon: 'none',
-			'duration': 5000
+			'duration': 2000
 		});
 	}
 
@@ -23,7 +23,7 @@ class Bluetooth {
 				success: res => {
 					this.isOpenBle = true;
 					this.showToast("初始化蓝牙模块成功");
-					resolve(res)
+					resolve(res);
 				},
 				fail: err => {
 					this.showToast(`初始化蓝牙模块失败` + JSON.stringify(err));
@@ -35,6 +35,11 @@ class Bluetooth {
 	}
 
 	startBluetoothDevicesDiscovery() {
+		if (!this.isOpenBle) {
+			this.showToast(`初始化蓝牙模块失败`)
+			return;
+		}
+
 		let self = this;
 		uni.showLoading({
 			title: '蓝牙搜索中'
@@ -76,7 +81,7 @@ class Bluetooth {
 
 		uni.showLoading({
 			mask: true,
-			title: '蓝牙连接中,请稍候...'
+			title: '设别连接中,请稍候...'
 		})
 		console.log(this.deviceId);
 		return new Promise((resolve, reject) => {
@@ -139,18 +144,23 @@ class Bluetooth {
 					for (let _obj of res.characteristics) {
 						//获取notify
 						if (_obj.properties.notify) {
-							uni.setStorageSync('notifyId', _obj.uuid);
+							self.notifyId = _obj.uuid;
+							uni.setStorageSync('notifyId', self.notifyId);
 						}
 						//获取writeId
 						if (_obj.properties.write) {
-							uni.setStorageSync('writeId', _obj.uuid);
+							self.writeId = _obj.uuid;
+							uni.setStorageSync('writeId', self.writeId);
 						}
 					}
 
-					console.log("res:getBLEDeviceCharacteristics " + JSON.stringify(res));
-
-					self.showToast("获取服务中所有特征值OK");
-					resolve(res)
+					//console.log("res:getBLEDeviceCharacteristics " + JSON.stringify(res));
+					let result = {
+						'notifyId': self.notifyId,
+						'writeId': self.writeId
+					};
+					self.showToast(`获取服务中所有特征值OK,${JSON.stringify(result)}`);
+					resolve(result)
 				},
 				fail: err => {
 					self.showToast(`getBLEDeviceCharacteristics` + JSON.stringify(err));

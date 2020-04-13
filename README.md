@@ -13,3 +13,7 @@
 + [Uni-App使用低功耗蓝牙连接血压仪测量](https://blog.csdn.net/msy_msy/article/details/94015449)
 + [微信 小程序 蓝牙 打印 小票 二维码](https://gitee.com/copperpeas/wx-bluetooth/)
 + [小程序蓝牙打印](https://github.com/benioZhang/miniprogram-bluetoothprinter)
++ [二维码宽度定义](https://blog.csdn.net/cfujiC/article/details/86013122)
+> + 我的图片宽度是240，那么拼接的指令就是[29, 118, 48, 0, 30, 0, 240, 0]
+> + 我的图片宽度是160，那么拼接的指令就是[29, 118, 48, 0, 20, 0, 160, 0]
+> + 补充一点，打印非二维码的图片，宽度一定要是24的倍数，不然打印也会出现乱码
