@@ -53,8 +53,14 @@ function toArrayBuffer(res) {
 	return new Uint8Array(cmds).buffer;
 }
 
+function zip_image(res) {
+	let arr = convert4to1(res.data);
+	let data = convert8to1(arr);
+	return data;
+}
 
 module.exports = {
 	formatTime: formatTime,
 	toArrayBuffer: toArrayBuffer,
+	zip_image: zip_image,
 }

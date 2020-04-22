@@ -10,9 +10,7 @@
 		<button size="mini" type="primary" @tap="startBluetoothDeviceDiscovery">搜索周边设备</button>
 		<button size="mini" type="warn" @tap="stopBluetoothDevicesDiscovery">停止搜索</button>
 		<button type="primary" @tap="pickUpOnce">测试打印</button>
-		<button type="primary" @tap="print_Qrcode">二维码</button>
 
-		<view class="devices_summary">已发现 {{devicesList.length}} 个外围设备:</view>
 		<scroll-view class="device_list" scroll-y="true" show-scrollbar="true">
 			<radio-group>
 				<view v-for="(item,index) in devicesList" :key="index" class="device_item" v-if="item.name.length>0">
@@ -161,8 +159,15 @@
 				}, 500);
 			},
 
+
+
 			//写入控制命令
-			writeBLECharacteristicValue() {
+			async writeBLECharacteristicValue() {
+
+				let Qrcode_res = await this.get_Qrcode();
+
+				console.log(Qrcode_res);
+
 				let printerJobs = new PrinterJobs();
 				printerJobs
 					.print(util.formatTime(new Date()))
@@ -192,15 +197,17 @@
 					.print('备注')
 					.print("无")
 					.print(printerUtil.fillLine())
-					.println();
+					.printQrcode(Qrcode_res)
+					.println()
+
+				;
+
+
+				//console.log(printerJobs);
 
 				let buffer = printerJobs.buffer();
 
 				this.printbuffs(buffer);
-			},
-
-			printbuff(buffer) {
-				bluetooth.writeBLECharacteristicValue(buffer);
 			},
 
 			printbuffs(buffer) {
@@ -210,17 +217,18 @@
 				const maxChunk = 20;
 				const delay = 20;
 				for (let i = 0, j = 0, length = buffer.byteLength; i < length; i += maxChunk, j++) {
-					let subPackage = buffer.slice(i, i + maxChunk <= length ? (i + maxChunk) : length);	
+					let subPackage = buffer.slice(i, i + maxChunk <= length ? (i + maxChunk) : length);
 					setTimeout(this.printbuff, j * delay, subPackage);
 				}
 			},
 
+			printbuff(buffer) {
+				bluetooth.writeBLECharacteristicValue(buffer);
+			},
 
-			print_Qrcode() {
+			get_Qrcode() {
 				let self = this;
-
 				return new Promise((resolve, reject) => {
-
 					const ctx = uni.createCanvasContext('shareCanvas');
 					console.log(self.canvas_width);
 					ctx.clearRect(0, 0, self.canvas_width, self.canvas_height);
@@ -241,15 +249,15 @@
 									width: self.canvas_width,
 									height: self.canvas_height,
 									success(res) {
-										let buffer = util.toArrayBuffer(res);
-										self.printbuffs(buffer);
+										resolve(util.zip_image(res));
 									}
 								})
-							}, 3000);
+							}, 1000);
 						}
 					});
 				});
 			},
+
 		}
 	}
 </script>
