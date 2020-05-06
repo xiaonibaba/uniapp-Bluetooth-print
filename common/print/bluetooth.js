@@ -9,6 +9,44 @@ class Bluetooth {
 		this.openBluetoothAdapter();
 	}
 
+
+	get_deviceId() {
+		return uni.getStorageSync("deviceId") || "";
+	}
+
+	set_deviceId(deviceId) {
+		this.deviceId = deviceId;
+		uni.setStorageSync(deviceId);
+	}
+
+	get_serviceId() {
+		return uni.getStorageSync("serviceId") || "";
+	}
+
+	set_serviceId(serviceId) {
+		this.serviceId = serviceId;
+		uni.setStorageSync(serviceId);
+	}
+
+	get_writeId() {
+		return uni.getStorageSync("writeId") || "";
+	}
+
+	set_writeId(writeId) {
+		this.writeId = writeId;
+		uni.setStorageSync(writeId);
+	}
+
+	get_notifyId() {
+		return uni.getStorageSync("notifyId") || "";
+	}
+
+	set_notifyId(notifyId) {
+		this.notifyId = notifyId;
+		uni.setStorageSync(notifyId);
+	}
+
+
 	showToast(title) {
 		uni.showToast({
 			title: title,
@@ -60,15 +98,13 @@ class Bluetooth {
 	}
 
 	stopBluetoothDevicesDiscovery() {
-		let self = this;
 		return new Promise((resolve, reject) => {
 			uni.stopBluetoothDevicesDiscovery({
-				success: e => {
-					uni.hideLoading();
+				success: res => {
+					resolve(res);
 				},
-				fail: e => {
-					uni.hideLoading();
-					self.showToast(`停止搜索蓝牙设备失败` + JSON.stringify(err));
+				fail: err => {
+					reject(err);
 				}
 			})
 		});
@@ -76,7 +112,7 @@ class Bluetooth {
 
 	createBLEConnection() {
 		//设备deviceId
-		let deviceId = this.deviceId;
+		let deviceId = this.get_deviceId();;
 		let self = this;
 
 		uni.showLoading({
@@ -103,7 +139,7 @@ class Bluetooth {
 	//获取蓝牙设备所有服务(service)
 	getBLEDeviceServices() {
 		let _serviceList = [];
-		let deviceId = this.deviceId;
+		let deviceId = this.get_deviceId();
 		let self = this;
 
 		return new Promise((resolve, reject) => {
@@ -132,8 +168,8 @@ class Bluetooth {
 
 	//获取蓝牙设备某个服务中所有特征值(characteristic)
 	getBLEDeviceCharacteristics() {
-		let deviceId = this.deviceId;
-		let serviceId = this.serviceId;
+		let deviceId = this.get_deviceId();
+		let serviceId = this.get_serviceId();
 
 		let self = this;
 		return new Promise((resolve, reject) => {
@@ -144,13 +180,11 @@ class Bluetooth {
 					for (let _obj of res.characteristics) {
 						//获取notify
 						if (_obj.properties.notify) {
-							self.notifyId = _obj.uuid;
-							uni.setStorageSync('notifyId', self.notifyId);
+							self.set_notifyId(_obj.uuid);
 						}
 						//获取writeId
 						if (_obj.properties.write) {
-							self.writeId = _obj.uuid;
-							uni.setStorageSync('writeId', self.writeId);
+							self.set_writeId(_obj.uuid);
 						}
 					}
 
@@ -240,8 +274,6 @@ class Bluetooth {
 	reconnect() {
 		(async () => {
 			try {
-				this.deviceId = this.deviceId || uni.getStorageSync("deviceId");
-				this.serviceId = this.serviceId || uni.getStorageSync("serviceId");
 
 				let result1 = await this.createBLEConnection();
 				console.log("createBLEConnection: " + JSON.stringify(result1));
@@ -252,8 +284,6 @@ class Bluetooth {
 				let result3 = await this.getBLEDeviceCharacteristics();
 				console.log("getBLEDeviceCharacteristics: " + JSON.stringify(result3));
 
-				// this.writeId = uni.getStorageSync("writeId");
-				// this.notifyId = uni.getStorageSync("notifyId");
 			} catch (err) {
 				console.log("err: " + JSON.stringify(err));
 			}

@@ -2,6 +2,7 @@
 + 打印文字
 + 打印对齐
 + 打印二维码
++ 2020/04/22 增加文字+二维码示例,更新请查看[github](https://github.com/xiaonibaba/uniapp-Bluetooth-print)
 
 #问题排查
 - 确定手机蓝牙打开,允许微信访问蓝牙的权限

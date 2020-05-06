@@ -5,13 +5,14 @@
 	3.重启蓝牙设备
 	4.不行的时候,删掉手机中蓝牙,重新链接 
 	-->
-	<view class="content">
-
-		<button size="mini" type="primary" @tap="startBluetoothDeviceDiscovery">搜索周边设备</button>
-		<button size="mini" type="warn" @tap="stopBluetoothDevicesDiscovery">停止搜索</button>
-		<button type="primary" @tap="pickUpOnce">测试打印</button>
-
-		<scroll-view class="device_list" scroll-y="true" show-scrollbar="true">
+	<view>
+		<view>
+			<button size="mini" type="primary" @tap="startBluetoothDeviceDiscovery">搜索周边设备</button>
+			<button size="mini" type="warn" @tap="stopBluetoothDevicesDiscovery">停止搜索</button>
+			<button type="primary" @tap="pickUpOnce">测试打印</button>
+		</view>
+		<view style="font-size: 24rpx; color: #333;margin-left: 10rpx;">连接设别:{{bluetooth.get_deviceId()}}</view>
+		<scroll-view class="device_list" scroll-y show-scrollbar>
 			<radio-group>
 				<view v-for="(item,index) in devicesList" :key="index" class="device_item" v-if="item.name.length>0">
 					<view style="font-size: 32rpx; color: #333;">
@@ -20,7 +21,7 @@
 					<view style="font-size: 20rpx">deviceId: {{item.deviceId}}</view>
 					<view style="font-size: 20rpx">Service数量: {{item.advertisServiceUUIDs.length || 0}}</view>
 
-					<radio-group v-if="deviceId===item.deviceId">
+					<radio-group v-if="item.deviceId===deviceId">
 						<view v-for="(service,service_index) in serviceList" :key="service_index" style="font-size: 20rpx">
 							<radio style="transform:scale(0.7)" :value="service.uuid" @tap="select_service(service)" />{{service.uuid }}
 						</view>
@@ -28,7 +29,7 @@
 				</view>
 			</radio-group>
 		</scroll-view>
-		<canvas canvas-id="shareCanvas" style="width: 240px; height: 240px;"></canvas>
+		<canvas canvas-id="shareCanvas" :style="{width:canvas_width+'px', height: canvas_height+'px'}"></canvas>
 	</view>
 </template>
 
@@ -38,8 +39,6 @@
 	import util from '@/common/print/util.js'
 	import drawQrcode from '@/common/print/weapp.qrcode.esm.js'
 	import Bluetooth from '@/common/print/bluetooth.js'
-
-	let bluetooth = new Bluetooth();
 
 	export default {
 		components: {},
@@ -51,12 +50,13 @@
 				deviceId: "", //选中的deviceId
 				canvas_width: 240,
 				canvas_height: 240,
+				bluetooth: new Bluetooth(),
 			}
 		},
 		//页面卸载是关闭蓝牙链接
 		onUnload() {
-			bluetooth.closeBLEConnection();
-			bluetooth.closeBluetoothAdapter();
+			this.bluetooth.closeBLEConnection();
+			this.bluetooth.closeBluetoothAdapter();
 		},
 		//页面打开,获取位置,打开蓝牙链接
 		onLoad() {
@@ -68,12 +68,11 @@
 				}
 			});
 
-			bluetooth.openBluetoothAdapter();
+			this.bluetooth.openBluetoothAdapter();
 
 		},
 		methods: {
-
-			//搜索周边设备
+			//1.搜索周边设备
 			startBluetoothDeviceDiscovery() {
 				uni.showLoading({
 					title: '蓝牙搜索中'
@@ -87,15 +86,17 @@
 						success: res => {
 							uni.onBluetoothDeviceFound(devices => {
 								console.log("发现设备: " + JSON.stringify(devices));
-								//不重复,就添加到devicesList中,
+								let obj = devices.devices[0];
+
+								//obj不重复,就添加到devicesList中,
 								if (!self.devicesList.some(item => {
-										return item.deviceId === devices.devices[0].deviceId
+										return item.deviceId === obj.deviceId
 									})) {
-									self.devicesList.push(devices.devices[0])
+									self.devicesList.push(obj)
 								}
 							});
 						},
-						fail: res => {
+						fail: err => {
 							uni.hideLoading();
 							self.showToast(`搜索设备失败` + JSON.stringify(err));
 						}
@@ -103,26 +104,33 @@
 				}, 200)
 			},
 
-			//停止搜索蓝牙设备
-			stopBluetoothDevicesDiscovery() {
+			//2.停止搜索蓝牙设备
+			async stopBluetoothDevicesDiscovery() {
+				let obj = await this.bluetooth.stopBluetoothDevicesDiscovery();
 				uni.hideLoading();
-				bluetooth.stopBluetoothDevicesDiscovery();
 			},
 
+
+			//3.测试打印
+			pickUpOnce() {
+				this.bluetooth.notifyBLECharacteristicValue();
+				let self = this;
+				setTimeout(() => {
+					self.writeBLECharacteristicValue();
+				}, 500);
+			},
 
 			//选中设备
 			async select_deviceId(item) {
 				this.deviceId = item.deviceId;
-				bluetooth.deviceId = item.deviceId;
-				uni.setStorageSync('deviceId', bluetooth.deviceId);
-
+				this.bluetooth.set_deviceId(item.deviceId);
 				this.serviceList = [];
 
 				try {
 					//1.链接设备
-					let result = await bluetooth.createBLEConnection();
+					let result = await this.bluetooth.createBLEConnection();
 					//2.寻找服务
-					let result2 = await bluetooth.getBLEDeviceServices();
+					let result2 = await this.bluetooth.getBLEDeviceServices();
 
 					console.log("获取服务: " + JSON.stringify(result2));
 
@@ -135,30 +143,9 @@
 
 			//选中服务
 			async select_service(res) {
-
-				bluetooth.serviceId = res.uuid;
-				uni.setStorageSync('serviceId', res.uuid);
-
-				try {
-					let result = await bluetooth.getBLEDeviceCharacteristics();
-				} catch (e) {
-					//TODO handle the exception
-					console.log("e: " + JSON.stringify(e));
-				}
-
+				this.bluetooth.set_serviceId(res.uuid);
+				let result = await this.bluetooth.getBLEDeviceCharacteristics();
 			},
-
-
-
-			//打印一次
-			pickUpOnce() {
-				bluetooth.notifyBLECharacteristicValue();
-				let self = this;
-				setTimeout(() => {
-					self.writeBLECharacteristicValue();
-				}, 500);
-			},
-
 
 
 			//写入控制命令
@@ -201,8 +188,6 @@
 					.println()
 
 				;
-
-
 				//console.log(printerJobs);
 
 				let buffer = printerJobs.buffer();
@@ -210,6 +195,7 @@
 				this.printbuffs(buffer);
 			},
 
+			//循环发送数据
 			printbuffs(buffer) {
 				// 1.并行调用多次会存在写失败的可能性
 				// 2.建议每次写入不超过20字节
@@ -222,10 +208,12 @@
 				}
 			},
 
+			//向打印机发送数据
 			printbuff(buffer) {
-				bluetooth.writeBLECharacteristicValue(buffer);
+				this.bluetooth.writeBLECharacteristicValue(buffer);
 			},
 
+			//生成二维码
 			get_Qrcode() {
 				let self = this;
 				return new Promise((resolve, reject) => {
@@ -263,60 +251,32 @@
 </script>
 
 <style>
-	.content {}
-
-	page {
-		color: #333;
-	}
-
 	button {
-		margin: 10upx;
-	}
-
-	.devices_summary {
-		margin-top: 5rpx;
-		padding: 20rpx;
-		font-size: 30rpx;
+		margin: 10rpx;
 	}
 
 	.device_list {
-		margin: 5rpx 20rpx 5rpx 20rpx;
+		margin: 0 10rpx;
 		border: 1rpx solid #ddd;
 		border-radius: 10rpx;
 		background-color: #FdFdFd;
-		min-height: 0rpx;
-		max-height: 400rpx;
-		width: 700rpx;
-
+		top: 250rpx;
+		bottom: 10rpx;
+		position: absolute;
+		width: 730rpx;
 	}
 
 	.device_item {
 		border-bottom: 1rpx solid #ddd;
 		padding: 20rpx;
 		color: #666;
+		background-color: #C0C0C0;
 
 	}
 
-	.device_item_hover {
-		background-color: rgba(0, 0, 0, .1);
-	}
-
-	.connected_info {
-		position: fixed;
-		bottom: 0;
-		width: 100%;
-		background-color: #F0F0F0;
-		padding: 10px;
-		padding-bottom: 20px;
-		margin-bottom: env(safe-area-inset-bottom);
-		font-size: 14px;
-		min-height: 100px;
-		box-shadow: 0px 0px 3px 0px;
-	}
-
-	.connected_info .operation {
+	/*二维码隐藏到窗口外*/
+	canvas {
 		position: absolute;
-		display: inline-block;
-		right: 30px;
+		top: -999rpx
 	}
 </style>
